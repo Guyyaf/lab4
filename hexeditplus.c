@@ -48,8 +48,8 @@ void loadIntoMemory(state *s)
         return;
     }
 
-    int fd = 0;
-    if(fd = fopen(s->file_name, "rb") < 0) {
+    FILE * fd;
+    if( (fd = fopen(s->file_name, "rb")) < 0) {
         perror("Error opening file");
         return;
     }
@@ -59,15 +59,14 @@ void loadIntoMemory(state *s)
     unsigned int location;
     int length;
     sscanf(input, "%x %d", &location, &length);
-
     if (s->debug_mode) {
         printf("Debug: file_name=%s, location=0x%x, length=%d\n", s->file_name, location, length);
     }
 
-    if (lseek(fd, location, SEEK_SET) < 0)
+    if (fseek(fd, location, SEEK_SET) < 0)
     {
         perror("Error seeking file");
-        close(fd);
+        fclose(fd);
         return;
     }
 
@@ -75,26 +74,19 @@ void loadIntoMemory(state *s)
     if (bytes_to_read > sizeof(s->mem_buf))
     {
         fprintf(stderr, "Error: requested length exceeds buffer size.\n");
-        close(fd);
+        fclose(fd);
         return;
     }
-
-    int bytes_read = read(fd, s->mem_buf, bytes_to_read);
-    if (bytes_read < 0)
+    size_t bytes_read = fread(s->mem_buf, s->unit_size, length, fd);
+    if (bytes_read < length)
     {
-        perror("Error reading file");
-        close(fd);
-        return;
+        perror("Could not read the expected number of units.");
+        fclose(fd);
     }
+    s->mem_count = bytes_read; //maybe need to multiply by unit_size
+    printf("read %d units into memory.\n", length);
 
-    s->mem_count = bytes_read / s->unit_size;
-
-    if (s->debug_mode)
-    {
-        printf("Debug info: read %ld bytes into memory.\n", bytes_read);
-    }
-
-    close(fd);
+    fclose(fd);
 }
 
 void toggleDisplayMode(state *s)
