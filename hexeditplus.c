@@ -37,6 +37,26 @@ void quit(state* s) {
     exit(0);
 }
 
+void loadIntoMemory(state* s) {
+    return;
+}
+
+void toggleDisplayMode(state* s) {
+    return;
+}
+
+void memoryDisplay(state* s) {
+    return;
+}
+
+void saveIntoFile(state* s) {
+    return;
+}
+
+void memoryModify(state* s) {
+    return;
+}
+
 void setUnitSize(state* s) {
     printf("Enter unit size (1, 2, or 4): ");
     int size;
@@ -65,8 +85,8 @@ char (*fun)(char);
 };
 
 struct fun_desc menu[] = { { "Toggle Debug Mode", toggleDebugMode }, { "Set File Name", setFileName },  
-    { "Set Unit Size", setUnitSize }, { "Load Into Memory" , decrypt}, { "Toggle Display Mode", xoprt },
-    { "Memory Display", xoprt }, { "Save Into File", xoprt }, { "Memory Modify", xoprt },
+    { "Set Unit Size", setUnitSize }, { "Load Into Memory" , loadIntoMemory}, { "Toggle Display Mode", toggleDisplayMode },
+    { "Memory Display", memoryDisplay }, { "Save Into File", saveIntoFile }, { "Memory Modify", memoryModify },
     { "Quit", xoprt } { NULL, NULL } };
 
 int printMenu(){
