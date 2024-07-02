@@ -10,6 +10,7 @@ typedef struct
     int unit_size;
     unsigned char mem_buf[10000];
     size_t mem_count;
+    int display_mode;
     /*
      .
      .
@@ -48,8 +49,9 @@ void loadIntoMemory(state *s)
         return;
     }
 
-    FILE * fd;
-    if( (fd = fopen(s->file_name, "rb")) < 0) {
+    FILE *fd;
+    if ((fd = fopen(s->file_name, "rb")) < 0)
+    {
         perror("Error opening file");
         return;
     }
@@ -59,7 +61,8 @@ void loadIntoMemory(state *s)
     unsigned int location;
     int length;
     sscanf(input, "%x %d", &location, &length);
-    if (s->debug_mode) {
+    if (s->debug_mode)
+    {
         printf("Debug: file_name=%s, location=0x%x, length=%d\n", s->file_name, location, length);
     }
 
@@ -83,7 +86,7 @@ void loadIntoMemory(state *s)
         perror("Could not read the expected number of units.");
         fclose(fd);
     }
-    s->mem_count = bytes_read; //maybe need to multiply by unit_size
+    s->mem_count = bytes_read; // maybe need to multiply by unit_size
     printf("read %d units into memory.\n", length);
 
     fclose(fd);
@@ -91,17 +94,98 @@ void loadIntoMemory(state *s)
 
 void toggleDisplayMode(state *s)
 {
-    return;
+    s->display_mode = !s->display_mode;
+    printf("Display flag now %s, %s representation\n", s->display_mode ? "on" : "off", s->display_mode ? "hexadecimal" : "decimal");
 }
+
+static char *hex_formats[] = {"%#hhx\n", "%#hx\n", "No such unit", "%#x\n"};
+static char *dec_formats[] = {"%#hhd\n", "%#hd\n", "No such unit", "%#d\n"};
 
 void memoryDisplay(state *s)
 {
-    return;
+    unsigned int addr; // address to start displaying from (if addr !=0)
+    int u;             // number of units to display
+    char input[100];
+
+    printf("Enter <address> <length>\n");
+    fgets(input, sizeof(input), stdin);
+    sscanf(input, "%x %d", &addr, &u);
+    unsigned char *start_addr;
+    if (addr == 0)
+    {
+        start_addr = s->mem_buf;
+    }
+    else
+    {
+        start_addr = (unsigned char *)addr;
+    }
+
+    if (s->display_mode)
+    {
+        printf("Hexadecimal\n===========\n");
+        for (int i = 0; i < u; ++i)
+        {
+            unsigned int n = 0;
+            memcpy(&n, start_addr + i * s->unit_size, s->unit_size);
+            printf(hex_formats[s->unit_size - 1], n);
+        }
+    }
+    else
+    {
+        printf("Decimal\n=======\n");
+        for (int i = 0; i < u; ++i)
+        {
+            unsigned int n = 0;
+            memcpy(&n, start_addr + i * s->unit_size, s->unit_size);
+            printf(dec_formats[s->unit_size - 1], n);
+        }
+    }
 }
 
 void saveIntoFile(state *s)
 {
-    return;
+    printf("Enter <source-address> <target-location> <length>\n");
+    char input[100];
+    fgets(input, sizeof(input), stdin);
+    unsigned int source_address;
+    unsigned int target_location;
+    int length;
+    unsigned char* sourceAdr;
+    sscanf(input, "%x %x %d", &source_address, &target_location, &length);
+    if (source_address == 0)
+    {
+        sourceAdr = s->mem_buf;
+    }
+    else
+    {
+        sourceAdr = (unsigned char *)source_address;
+    }
+    if (s->file_name == "")
+    {
+        printf("Error: File name is not set.\n");
+        return;
+    }
+    FILE *file = fopen(s->file_name, "r+b");
+    if (file == NULL)
+    {
+        printf("Error: Failed to open file %s\n", s->file_name);
+        return;
+    }
+
+   if(fseek(file, target_location, SEEK_SET) != 0) {
+        perror("Could not open file.");
+        fclose(file);
+        return;
+   }
+
+//need to add a check if wrote all 
+    fwrite(sourceAdr, s->unit_size, length, file);
+    fclose(file);
+
+    if (s->debug_mode)
+    {
+        printf("Wrote %d units from memory to file %s at offset 0x%x.\n", length, s->file_name, target_location);
+    }
 }
 
 void memoryModify(state *s)
@@ -161,7 +245,7 @@ int main(int argc, char **argv)
     char inputBuffer[100];
     int size = sizeof(menu) / sizeof(menu[0]) - 1;
     printMenu();
-    state s = {0, "", 1, {0}, 0};
+    state s = {0, "", 1, {0}, 0, 0};
     while (fgets(inputBuffer, 100, stdin))
     {
         int input = atoi(inputBuffer);
@@ -174,7 +258,6 @@ int main(int argc, char **argv)
         {
             printf("Within Bounds\n");
             menu[input].fun(&s);
-            printf("DONE.\n");
         }
         printMenu();
     }
