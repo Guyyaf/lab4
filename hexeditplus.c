@@ -18,6 +18,8 @@ typedef struct
     */
 } state;
 
+#define MEM_BUF_SIZE 10000
+
 void toggleDebugMode(state *s)
 {
     s->debug_mode = !s->debug_mode;
@@ -160,12 +162,16 @@ void saveIntoFile(state *s)
     {
         sourceAdr = (unsigned char *)source_address;
     }
-    if (s->file_name == "")
+    if (sourceAdr < s->mem_buf || sourceAdr >= s->mem_buf + MEM_BUF_SIZE) {
+        printf("ERROR: Source address is out of bounds\n");
+        return;
+    }
+     if (strcmp(s->file_name, "") == 0)
     {
         printf("Error: File name is not set.\n");
         return;
     }
-    FILE *file = fopen(s->file_name, "r+b");
+    FILE *file = fopen(s->file_name, "r+");
     if (file == NULL)
     {
         printf("Error: Failed to open file %s\n", s->file_name);
@@ -190,7 +196,18 @@ void saveIntoFile(state *s)
 
 void memoryModify(state *s)
 {
-    return;
+    unsigned int val;
+    unsigned int location;
+    printf("Enter <location> <val>:\n");
+    char buffer[100]; //maybe need to increase size
+    fgets(buffer, sizeof(buffer), stdin);
+    sscanf(buffer, "%x %x", &location, &val);
+    if(location+s->unit_size > s->mem_count) {
+        printf("Error: location out of bounds\n");
+        return;
+    }
+    memcpy(s->mem_buf + location, &val, s->unit_size);
+    printf("Modified memory at location %x with value %x\n", location, val);
 }
 
 void setUnitSize(state *s)
